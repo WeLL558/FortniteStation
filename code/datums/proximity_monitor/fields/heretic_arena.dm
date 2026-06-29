@@ -156,14 +156,19 @@ GLOBAL_LIST_EMPTY(heretic_arenas)
 	owner.cut_overlay(crown_overlay)
 	crown_overlay = mutable_appearance('icons/mob/effects/crown.dmi', "arena_victor", -HALO_LAYER)
 	crown_overlay.pixel_z = 24
+	if(ishuman(owner))
+		var/mob/living/carbon/human/human_parent = owner
+		human_parent.apply_height(crown_overlay, UPPER_BODY)
+		var/obj/item/bodypart/head/human_head = human_parent.get_bodypart(BODY_ZONE_HEAD)
+		human_head?.worn_head_offset?.apply_offset(crown_overlay)
 	owner.add_overlay(crown_overlay)
 	owner.remove_traits(list(TRAIT_ELDRITCH_ARENA_PARTICIPANT, TRAIT_NO_TELEPORT), TRAIT_STATUS_EFFECT(id))
 
 	// The mansus celebrates your efforts
 	if(IS_HERETIC(owner))
 		owner.heal_overall_damage(60, 60, 60)
-		owner.adjustToxLoss(-60, forced = TRUE) // Slime heretics everywhere...
-		owner.adjustOxyLoss(-60)
+		owner.adjust_tox_loss(-60, forced = TRUE) // Slime heretics everywhere...
+		owner.adjust_oxy_loss(-60)
 		if(iscarbon(owner))
 			var/mob/living/carbon/carbon_owner = owner
 			for(var/datum/wound/wound as anything in carbon_owner.all_wounds)
@@ -203,6 +208,11 @@ GLOBAL_LIST_EMPTY(heretic_arenas)
 	owner.add_traits(list(TRAIT_ELDRITCH_ARENA_PARTICIPANT, TRAIT_NO_TELEPORT), TRAIT_STATUS_EFFECT(id))
 	crown_overlay = mutable_appearance('icons/mob/effects/crown.dmi', "arena_fighter", -HALO_LAYER)
 	crown_overlay.pixel_z = 24
+	if(ishuman(owner))
+		var/mob/living/carbon/human/human_parent = owner
+		human_parent.apply_height(crown_overlay, UPPER_BODY)
+		var/obj/item/bodypart/head/human_head = human_parent.get_bodypart(BODY_ZONE_HEAD)
+		human_head?.worn_head_offset?.apply_offset(crown_overlay)
 	owner.add_overlay(crown_overlay)
 	return TRUE
 

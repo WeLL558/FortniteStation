@@ -1,6 +1,7 @@
 
 /* EMOTE DATUMS */
 /datum/emote/living
+	abstract_type = /datum/emote/living
 	mob_type_allowed_typecache = /mob/living
 	mob_type_blacklist_typecache = list(/mob/living/brain)
 
@@ -118,7 +119,7 @@
 		message_animal_or_basic = custom_message
 	. = ..()
 	message_animal_or_basic = initial(message_animal_or_basic)
-	if(!user.can_speak() || user.getOxyLoss() >= 50)
+	if(!user.can_speak() || user.get_oxy_loss() >= 50)
 		return //stop the sound if oxyloss too high/cant speak
 	var/mob/living/carbon/carbon_user = user
 	// For masks that give unique death sounds
@@ -302,7 +303,7 @@
 	message = "laughs."
 	message_mime = "laughs silently!"
 	emote_type = EMOTE_VISIBLE | EMOTE_AUDIBLE
-	specific_emote_audio_cooldown = 8 SECONDS
+	manual_specific_emote_audio_cooldown = 8 SECONDS
 	vary = TRUE
 
 /datum/emote/living/laugh/can_run_emote(mob/living/user, status_check = TRUE , intentional, params)
@@ -364,7 +365,7 @@
 						TIMER_COOLDOWN_START(src, "point_verb_emote_cooldown", 2 SECONDS)
 					else
 						message_param = "[span_userdanger("bumps [user.p_their()] head on the ground")] trying to motion towards %t."
-						our_carbon.adjustOrganLoss(ORGAN_SLOT_BRAIN, 5)
+						our_carbon.adjust_organ_loss(ORGAN_SLOT_BRAIN, 5)
 						playsound(user, 'sound/effects/glass/glassbash.ogg', 50, TRUE, SHORT_RANGE_SOUND_EXTRARANGE)
 						TIMER_COOLDOWN_START(src, "point_verb_emote_cooldown", 2.5 SECONDS)
 	return ..()
@@ -418,7 +419,9 @@
 	emote_type = EMOTE_VISIBLE | EMOTE_AUDIBLE
 	mob_type_blacklist_typecache = list(/mob/living/brain)
 	sound_wall_ignore = TRUE
-	specific_emote_audio_cooldown = 10 SECONDS
+	use_sound_tokens = TRUE
+	manual_specific_emote_audio_cooldown = 10 SECONDS
+	forced_specific_emote_audio_cooldown = 4 SECONDS
 	vary = TRUE
 
 /datum/emote/living/scream/run_emote(mob/user, params, type_override, intentional = FALSE)
@@ -655,8 +658,7 @@
 	if(TIMER_COOLDOWN_FINISHED(user, COOLDOWN_YAWN_PROPAGATION))
 		TIMER_COOLDOWN_START(user, COOLDOWN_YAWN_PROPAGATION, cooldown * 3)
 
-	var/mob/living/carbon/carbon_user = user
-	if(carbon_user.obscured_slots & HIDEFACE)
+	if(astype(user, /mob/living/carbon)?.obscured_slots & HIDEFACE)
 		return // if your face is obscured, skip propagation
 
 	var/propagation_distance = user.client ? 5 : 2 // mindless mobs are less able to spread yawns
@@ -698,6 +700,7 @@
 /datum/emote/living/custom
 	key = "me"
 	key_third_person = "custom"
+	emote_type = EMOTE_VISIBLE | EMOTE_AUDIBLE
 	message = null
 
 /datum/emote/living/custom/can_run_emote(mob/user, status_check, intentional, params)
@@ -748,7 +751,7 @@
 			log_filter("Soft IC Emote", input, filter_result)
 			return FALSE
 
-		message_admins("[ADMIN_LOOKUPFLW(user)] has passed the soft filter for emote \"[filter_result[CHAT_FILTER_INDEX_WORD]]\" they may be using a disallowed term. Emote: \"[input]\"")
+		message_admins("[ADMIN_LOOKUPFLW(user)] has passed the soft filter for emote \"[filter_result[CHAT_FILTER_INDEX_WORD]]\" they may be using a disallowed term. Emote: \"[html_encode(input)]\"")
 		log_admin_private("[key_name(user)] has passed the soft filter for emote \"[filter_result[CHAT_FILTER_INDEX_WORD]]\" they may be using a disallowed term. Emote: \"[input]\"")
 		SSblackbox.record_feedback("tally", "passed_soft_ic_blocked_words", 1, LOWER_TEXT(config.soft_ic_filter_regex.match))
 		log_filter("Soft IC Emote (Passed)", input, filter_result)
@@ -782,23 +785,15 @@
 	if(!emote_is_valid(user, our_message))
 		return FALSE
 
-	if(type_override)
-		emote_type = type_override
-
 	if(!params)
 		var/user_emote_type = get_custom_emote_type_from_user()
 
 		if(!user_emote_type)
 			return FALSE
 
-		emote_type = user_emote_type
+		type_override = user_emote_type
 
-	message = our_message
-	. = ..()
-
-	///Reset the message and emote type after it's run.
-	message = null
-	emote_type = EMOTE_VISIBLE
+	. = ..(user = user, params = our_message, type_override = type_override, intentional = intentional)
 
 /datum/emote/living/custom/replace_pronoun(mob/user, message)
 	return message
